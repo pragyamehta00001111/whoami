@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>20 LPA DevSecOps Roadmap Planner</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
@@ -72,81 +73,133 @@
             font-weight: 600;
             box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.39);
         }
+
+        /* Added Visual Refinements */
+        .animated-bg {
+            background: linear-gradient(-45deg, #f0fdf4, #e0e7ff, #f3e8ff, #e0f2fe);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .progress-bar-fill {
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
     </style>
 </head>
-<body class="text-slate-800 antialiased flex items-center justify-center p-4 md:p-8">
+<body class="text-slate-800 antialiased flex items-center justify-center p-2 sm:p-4 md:p-8 animated-bg overflow-hidden">
 
-    <div class="glass-panel w-full max-w-6xl h-full max-h-[900px] rounded-3xl shadow-2xl flex flex-col md:flex-row overflow-hidden">
+    <div class="glass-panel w-full max-w-6xl h-[calc(100vh-1rem)] md:h-full max-h-none md:max-h-[900px] rounded-2xl md:rounded-3xl shadow-2xl flex flex-col overflow-hidden relative">
         
-        <!-- Left Section: Calendar -->
-        <div class="w-full md:w-7/12 lg:w-2/3 p-6 md:p-10 flex flex-col h-full border-b md:border-b-0 md:border-r border-slate-200">
-            
-            <!-- Calendar Header -->
-            <div class="flex justify-between items-center mb-8">
-                <div>
-                    <h1 class="text-3xl font-bold text-slate-900" id="month-year-display">June 2026</h1>
-                    <p class="text-primary mt-1 text-sm font-bold uppercase tracking-wide">20 LPA DevSecOps Roadmap</p>
-                    <p class="text-slate-500 mt-1 text-sm font-medium" id="today-date-display">Today is Wednesday, June 17</p>
-                </div>
-                <div class="flex space-x-2">
-                    <button onclick="changeMonth(-1)" class="p-2 rounded-full hover:bg-slate-100 transition-colors text-slate-600 focus:outline-none">
-                        <i class="fa-solid fa-chevron-left"></i>
-                    </button>
-                    <button onclick="resetToToday()" class="px-4 py-2 rounded-full hover:bg-slate-100 transition-colors text-slate-700 text-sm font-medium focus:outline-none">
-                        Today
-                    </button>
-                    <button onclick="changeMonth(1)" class="p-2 rounded-full hover:bg-slate-100 transition-colors text-slate-600 focus:outline-none">
-                        <i class="fa-solid fa-chevron-right"></i>
-                    </button>
-                </div>
+        <!-- Top Navigation Tabs -->
+        <div class="flex border-b border-slate-200 bg-white/50 backdrop-blur-md z-10 px-3 md:px-6 pt-2 md:pt-4 shrink-0 justify-between items-center overflow-x-auto gap-2">
+            <div class="flex shrink-0">
+                <button onclick="switchView('calendar')" id="tab-calendar" class="px-3 sm:px-6 py-3 font-semibold text-primary border-b-2 border-primary transition-colors focus:outline-none flex items-center whitespace-nowrap text-sm sm:text-base">
+                    <i class="fa-regular fa-calendar-check mr-2"></i> <span>Daily Planner</span>
+                </button>
+                <button onclick="switchView('roadmap')" id="tab-roadmap" class="px-3 sm:px-6 py-3 font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent transition-colors focus:outline-none flex items-center whitespace-nowrap text-sm sm:text-base">
+                    <i class="fa-solid fa-map-location-dot mr-2"></i> <span>Roadmap</span>
+                </button>
             </div>
+            <button id="reset-btn" onclick="factoryReset()" class="text-[10px] sm:text-xs font-medium text-slate-400 hover:text-red-500 transition-all duration-300 flex items-center justify-center gap-1 bg-slate-100 hover:bg-red-50 px-2 sm:px-3 py-1.5 rounded-lg w-24 sm:w-36 focus:outline-none shrink-0">
+                <i class="fa-solid fa-rotate-right"></i> <span class="hidden sm:inline">Reset Plan</span><span class="sm:hidden">Reset</span>
+            </button>
+        </div>
+
+        <!-- Calendar & Planner View -->
+        <div id="calendar-view" class="flex flex-col md:flex-row flex-grow overflow-y-auto md:overflow-hidden h-full">
+            
+            <!-- Left Section: Calendar -->
+            <div class="w-full md:w-7/12 lg:w-2/3 p-4 sm:p-6 md:p-10 flex flex-col shrink-0 md:h-full border-b md:border-b-0 md:border-r border-slate-200">
+                
+                <div class="flex flex-col sm:flex-row justify-between sm:items-end mb-4 sm:mb-6 gap-3 sm:gap-0">
+                    <div>
+                        <h2 id="month-year-display" class="text-2xl sm:text-3xl font-bold text-slate-900"></h2>
+                        <p id="today-date-display" class="text-xs sm:text-sm text-slate-500 font-medium mt-1"></p>
+                    </div>
+                    <div class="flex items-center gap-2 self-end sm:self-auto">
+                        <button onclick="changeMonth(-1)" class="p-2 rounded-full hover:bg-slate-100 transition-colors text-slate-600 focus:outline-none">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        <button onclick="resetToToday()" class="px-3 py-1.5 rounded-lg bg-indigo-50 text-primary hover:bg-indigo-100 transition-colors text-sm font-semibold focus:outline-none">
+                            Today
+                        </button>
+                        <button onclick="changeMonth(1)" class="p-2 rounded-full hover:bg-slate-100 transition-colors text-slate-600 focus:outline-none">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
 
             <!-- Calendar Grid -->
             <div class="flex-grow flex flex-col">
                 <!-- Days of Week -->
-                <div class="grid grid-cols-7 gap-2 mb-4">
-                    <div class="text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Sun</div>
-                    <div class="text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Mon</div>
-                    <div class="text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Tue</div>
-                    <div class="text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Wed</div>
-                    <div class="text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Thu</div>
-                    <div class="text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Fri</div>
-                    <div class="text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Sat</div>
+                <div class="grid grid-cols-7 gap-1 sm:gap-2 mb-2 sm:mb-4">
+                    <div class="text-center text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Sun</div>
+                    <div class="text-center text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Mon</div>
+                    <div class="text-center text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Tue</div>
+                    <div class="text-center text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Wed</div>
+                    <div class="text-center text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Thu</div>
+                    <div class="text-center text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Fri</div>
+                    <div class="text-center text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Sat</div>
                 </div>
                 
                 <!-- Days Grid -->
-                <div id="calendar-days" class="grid grid-cols-7 gap-2 flex-grow auto-rows-fr">
+                <div id="calendar-days" class="grid grid-cols-7 gap-1 sm:gap-2 flex-grow auto-rows-[3rem] sm:auto-rows-fr">
                     <!-- JavaScript will populate days here -->
                 </div>
             </div>
         </div>
 
         <!-- Right Section: Tasks & Info -->
-        <div class="w-full md:w-5/12 lg:w-1/3 bg-slate-50/50 p-6 md:p-8 flex flex-col h-full overflow-y-auto">
+        <div class="w-full md:w-5/12 lg:w-1/3 bg-slate-50/50 p-4 sm:p-6 md:p-8 flex flex-col flex-grow md:h-full overflow-y-visible md:overflow-y-auto">
             
-            <!-- Days Left Widgets -->
-            <div class="grid grid-cols-2 gap-4 mb-8">
-                <div class="bg-indigo-600 p-4 rounded-2xl shadow-md border border-indigo-500 flex flex-col items-center justify-center text-center text-white">
+            <!-- Added Focus Timer & Phase Widget -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6">
+                <div class="bg-indigo-600 p-4 rounded-2xl shadow-md border border-indigo-500 flex flex-col items-center justify-center text-center text-white relative overflow-hidden group">
+                    <div class="absolute -right-4 -top-4 w-16 h-16 bg-white opacity-10 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
                     <div class="text-3xl font-bold mb-1"><i class="fa-solid fa-rocket"></i></div>
                     <div class="text-xs font-medium text-indigo-100 uppercase tracking-wide">Phase 1<br>Linux & Scripting</div>
                 </div>
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center">
-                    <div class="text-3xl font-bold text-orange-500 mb-1" id="days-left-year">--</div>
-                    <div class="text-xs font-medium text-slate-500 uppercase tracking-wide">Days left<br>to 20 LPA Goal</div>
+                
+                <!-- Pomodoro Timer -->
+                <div class="bg-gradient-to-br from-slate-800 to-slate-900 p-4 rounded-2xl shadow-md border border-slate-700 flex flex-col items-center justify-center text-center text-white relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-white opacity-0 group-hover:opacity-5 transition-opacity"></div>
+                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1">
+                        <i class="fa-solid fa-stopwatch text-indigo-400"></i> Focus Session
+                    </div>
+                    <div class="text-3xl font-mono font-bold tracking-tight text-indigo-100" id="timer-display">25:00</div>
+                    <div class="flex gap-4 mt-2">
+                        <button onclick="toggleTimer()" id="timer-toggle" class="text-slate-400 hover:text-white transition-colors focus:outline-none"><i class="fa-solid fa-play"></i></button>
+                        <button onclick="resetTimer()" class="text-slate-500 hover:text-slate-300 transition-colors focus:outline-none"><i class="fa-solid fa-rotate-left"></i></button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Task Section Header -->
-            <div class="mb-6">
-                <h2 class="text-xl font-bold text-slate-900 flex items-center justify-between">
-                    <span>What to do</span>
-                    <span id="selected-date-label" class="text-sm font-medium text-primary bg-indigo-50 px-3 py-1 rounded-full">Today</span>
-                </h2>
-                <p class="text-sm text-slate-500 mt-1" id="selected-date-full">June 17, 2026</p>
+            <!-- Task Section Header with Progress Bar -->
+            <div class="mb-5 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden">
+                <div class="flex items-center justify-between mb-1">
+                    <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-primary"></i> Action Items
+                    </h2>
+                    <span id="selected-date-label" class="text-xs font-bold text-primary bg-indigo-50 px-2 py-1 rounded-md border border-indigo-100">Today</span>
+                </div>
+                <p class="text-sm text-slate-500 mb-3 font-medium" id="selected-date-full">June 17, 2026</p>
+                
+                <!-- Progress Tracker -->
+                <div class="w-full bg-slate-100 rounded-full h-2 mb-1 overflow-hidden">
+                    <div id="daily-progress" class="bg-gradient-to-r from-indigo-500 to-green-400 h-2 rounded-full progress-bar-fill" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span>Progress</span>
+                    <span id="progress-text">0%</span>
+                </div>
             </div>
 
             <!-- Task Input -->
-            <form id="task-form" class="mb-6 flex gap-2" onsubmit="addTask(event)">
+            <form id="task-form" class="mb-6 flex gap-2 shrink-0" onsubmit="addTask(event)">
                 <input type="text" id="task-input" placeholder="Add a new task..." 
                     class="flex-grow bg-white border border-slate-200 text-slate-700 text-sm rounded-xl focus:ring-2 focus:ring-primary focus:border-primary block p-3 outline-none transition-all shadow-sm">
                 <button type="submit" class="bg-primary hover:bg-primaryHover text-white rounded-xl px-4 py-2 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary flex items-center justify-center">
@@ -155,7 +208,7 @@
             </form>
 
             <!-- Task List -->
-            <div class="flex-grow overflow-y-auto pr-2 pb-10" id="task-list">
+            <div class="flex-grow overflow-y-visible md:overflow-y-auto pr-1 md:pr-2 pb-6 md:pb-10" id="task-list">
                 <!-- JavaScript will populate tasks here -->
                 <div class="text-center text-slate-400 mt-10 hidden" id="empty-state">
                     <i class="fa-regular fa-calendar-check text-4xl mb-3 opacity-50"></i>
@@ -163,6 +216,143 @@
                 </div>
             </div>
         </div>
+        </div>
+
+        <!-- Full Roadmap View -->
+        <div id="roadmap-view" class="hidden flex-grow overflow-y-auto p-4 sm:p-6 md:p-10 bg-slate-50/50">
+            <div class="max-w-4xl mx-auto pb-12">
+                <div class="text-center mb-10">
+                    <h2 class="text-3xl font-bold text-slate-900 mb-3">The Path to 20 LPA: DevSecOps Engineer</h2>
+                    <p class="text-slate-600 text-lg">A highly structured 24-month curriculum. Master these technologies, build public proof-of-work, and target international remote opportunities.</p>
+                </div>
+
+                <!-- Timeline Grid -->
+                <div class="relative border-l-4 border-indigo-200 ml-4 md:ml-8 space-y-12 pb-10">
+                    
+                    <!-- Phase 1 -->
+                    <div class="relative pl-8 md:pl-12">
+                        <div class="absolute -left-3.5 top-1 bg-indigo-600 rounded-full w-6 h-6 border-4 border-white shadow"></div>
+                        <div class="text-sm text-indigo-600 font-bold tracking-wider uppercase mb-1">Months 1-3</div>
+                        <h3 class="text-2xl font-bold text-slate-800 mb-3">Phase 1: Linux & Scripting Mastery</h3>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <ul class="space-y-3 text-slate-600">
+                                <li class="flex items-start"><i class="fa-solid fa-terminal text-primary mt-1 mr-3 w-5"></i> <span><strong>Linux Internals:</strong> File systems, permissions, package management, systemd, SSH.</span></li>
+                                <li class="flex items-start"><i class="fa-solid fa-file-code text-primary mt-1 mr-3 w-5"></i> <span><strong>Bash Scripting:</strong> Automating system tasks, parsing logs, cronjobs.</span></li>
+                                <li class="flex items-start"><i class="fa-brands fa-python text-primary mt-1 mr-3 w-5"></i> <span><strong>Python Basics:</strong> Data structures, file I/O, writing CLI tools, making API requests.</span></li>
+                                <li class="flex items-start"><i class="fa-brands fa-git-alt text-primary mt-1 mr-3 w-5"></i> <span><strong>Version Control:</strong> Git branch management, rebasing, merge conflict resolution.</span></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Phase 2 -->
+                    <div class="relative pl-8 md:pl-12">
+                        <div class="absolute -left-3.5 top-1 bg-indigo-500 rounded-full w-6 h-6 border-4 border-white shadow"></div>
+                        <div class="text-sm text-indigo-600 font-bold tracking-wider uppercase mb-1">Months 4-6</div>
+                        <h3 class="text-2xl font-bold text-slate-800 mb-3">Phase 2: Networking & Cloud Fundamentals</h3>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <ul class="space-y-3 text-slate-600">
+                                <li class="flex items-start"><i class="fa-solid fa-network-wired text-primary mt-1 mr-3 w-5"></i> <span><strong>Networking:</strong> TCP/IP, OSI Model, DNS, DHCP, Subnetting, Firewalls.</span></li>
+                                <li class="flex items-start"><i class="fa-brands fa-aws text-primary mt-1 mr-3 w-5"></i> <span><strong>AWS Core:</strong> IAM, EC2, S3, RDS, VPC configurations.</span></li>
+                                <li class="flex items-start"><i class="fa-solid fa-server text-primary mt-1 mr-3 w-5"></i> <span><strong>Web Servers:</strong> Configuring and securing Nginx and Apache.</span></li>
+                                <li class="flex items-start"><i class="fa-solid fa-certificate text-primary mt-1 mr-3 w-5"></i> <span><strong>Certification Goal:</strong> Pass AWS Certified Cloud Practitioner / SysOps Admin.</span></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Phase 3 -->
+                    <div class="relative pl-8 md:pl-12">
+                        <div class="absolute -left-3.5 top-1 bg-indigo-500 rounded-full w-6 h-6 border-4 border-white shadow"></div>
+                        <div class="text-sm text-indigo-600 font-bold tracking-wider uppercase mb-1">Months 7-9</div>
+                        <h3 class="text-2xl font-bold text-slate-800 mb-3">Phase 3: Containerization & Microservices</h3>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <ul class="space-y-3 text-slate-600">
+                                <li class="flex items-start"><i class="fa-brands fa-docker text-primary mt-1 mr-3 w-5"></i> <span><strong>Docker Core:</strong> Images, containers, volumes, docker networking.</span></li>
+                                <li class="flex items-start"><i class="fa-solid fa-layer-group text-primary mt-1 mr-3 w-5"></i> <span><strong>Docker Compose:</strong> Orchestrating multi-container local environments.</span></li>
+                                <li class="flex items-start"><i class="fa-solid fa-microchip text-primary mt-1 mr-3 w-5"></i> <span><strong>Microservices:</strong> Understanding 12-factor app methodology.</span></li>
+                                <li class="flex items-start"><i class="fa-solid fa-box text-primary mt-1 mr-3 w-5"></i> <span><strong>Registries:</strong> Pushing/Pulling from DockerHub and AWS ECR.</span></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Phase 4 -->
+                    <div class="relative pl-8 md:pl-12">
+                        <div class="absolute -left-3.5 top-1 bg-indigo-500 rounded-full w-6 h-6 border-4 border-white shadow"></div>
+                        <div class="text-sm text-indigo-600 font-bold tracking-wider uppercase mb-1">Months 10-12</div>
+                        <h3 class="text-2xl font-bold text-slate-800 mb-3">Phase 4: Infrastructure as Code (IaC)</h3>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <ul class="space-y-3 text-slate-600">
+                                <li class="flex items-start"><i class="fa-solid fa-code text-primary mt-1 mr-3 w-5"></i> <span><strong>Terraform Basics:</strong> Providers, state management, resources, data blocks.</span></li>
+                                <li class="flex items-start"><i class="fa-solid fa-cubes text-primary mt-1 mr-3 w-5"></i> <span><strong>Terraform Modules:</strong> Creating reusable infrastructure code.</span></li>
+                                <li class="flex items-start"><i class="fa-solid fa-screwdriver-wrench text-primary mt-1 mr-3 w-5"></i> <span><strong>Configuration Management:</strong> Ansible basics (Playbooks, inventories) for server setup.</span></li>
+                                <li class="flex items-start"><i class="fa-solid fa-cloud-arrow-up text-primary mt-1 mr-3 w-5"></i> <span><strong>Project:</strong> Deploy a full AWS 3-tier architecture entirely using Terraform.</span></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Phase 5 -->
+                    <div class="relative pl-8 md:pl-12">
+                        <div class="absolute -left-3.5 top-1 bg-indigo-400 rounded-full w-6 h-6 border-4 border-white shadow"></div>
+                        <div class="text-sm text-indigo-600 font-bold tracking-wider uppercase mb-1">Months 13-15</div>
+                        <h3 class="text-2xl font-bold text-slate-800 mb-3">Phase 5: CI/CD & Automation</h3>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <ul class="space-y-3 text-slate-600">
+                                <li class="flex items-start"><i class="fa-brands fa-github text-primary mt-1 mr-3 w-5"></i> <span><strong>GitHub Actions / GitLab CI:</strong> Writing workflows, managing secrets, triggers.</span></li>
+                                <li class="flex items-start"><i class="fa-solid fa-vial text-primary mt-1 mr-3 w-5"></i> <span><strong>Automated Testing:</strong> Integrating unit tests and linting in pipelines.</span></li>
+                                <li class="flex items-start"><i class="fa-solid fa-rocket text-primary mt-1 mr-3 w-5"></i> <span><strong>Deployment:</strong> Automating releases to staging and production environments.</span></li>
+                                <li class="flex items-start"><i class="fa-solid fa-chart-line text-primary mt-1 mr-3 w-5"></i> <span><strong>Monitoring Intro:</strong> Basic setup of Prometheus and Grafana for metrics.</span></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Phase 6 -->
+                    <div class="relative pl-8 md:pl-12">
+                        <div class="absolute -left-3.5 top-1 bg-indigo-400 rounded-full w-6 h-6 border-4 border-white shadow"></div>
+                        <div class="text-sm text-indigo-600 font-bold tracking-wider uppercase mb-1">Months 16-18</div>
+                        <h3 class="text-2xl font-bold text-slate-800 mb-3">Phase 6: DevSecOps & Cloud Security</h3>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <ul class="space-y-3 text-slate-600">
+                                <li class="flex items-start"><i class="fa-solid fa-shield-halved text-primary mt-1 mr-3 w-5"></i> <span><strong>Shift-Left Security:</strong> SAST (Static), DAST (Dynamic), and SCA tools integration.</span></li>
+                                <li class="flex items-start"><i class="fa-solid fa-magnifying-glass-shield text-primary mt-1 mr-3 w-5"></i> <span><strong>Container Security:</strong> Scanning images with Trivy or Clair.</span></li>
+                                <li class="flex items-start"><i class="fa-solid fa-key text-primary mt-1 mr-3 w-5"></i> <span><strong>Secrets Management:</strong> Implementing HashiCorp Vault or AWS Secrets Manager.</span></li>
+                                <li class="flex items-start"><i class="fa-solid fa-user-shield text-primary mt-1 mr-3 w-5"></i> <span><strong>Compliance:</strong> Basic understanding of SOC2 / ISO27001 requirements.</span></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Phase 7 -->
+                    <div class="relative pl-8 md:pl-12">
+                        <div class="absolute -left-3.5 top-1 bg-indigo-400 rounded-full w-6 h-6 border-4 border-white shadow"></div>
+                        <div class="text-sm text-indigo-600 font-bold tracking-wider uppercase mb-1">Months 19-21</div>
+                        <h3 class="text-2xl font-bold text-slate-800 mb-3">Phase 7: Kubernetes Orchestration</h3>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <ul class="space-y-3 text-slate-600">
+                                <li class="flex items-start"><i class="fa-solid fa-dharmachakra text-primary mt-1 mr-3 w-5"></i> <span><strong>K8s Architecture:</strong> Pods, Deployments, Services, Ingress, Namespaces.</span></li>
+                                <li class="flex items-start"><i class="fa-solid fa-cloud text-primary mt-1 mr-3 w-5"></i> <span><strong>Managed K8s:</strong> Deploying clusters via AWS EKS or Azure AKS.</span></li>
+                                <li class="flex items-start"><i class="fa-solid fa-box-open text-primary mt-1 mr-3 w-5"></i> <span><strong>Helm:</strong> Packaging and deploying applications using Helm charts.</span></li>
+                                <li class="flex items-start"><i class="fa-solid fa-infinity text-primary mt-1 mr-3 w-5"></i> <span><strong>GitOps:</strong> Implementing ArgoCD or Flux for continuous delivery to Kubernetes.</span></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Phase 8 -->
+                    <div class="relative pl-8 md:pl-12">
+                        <div class="absolute -left-3.5 top-1 bg-green-500 rounded-full w-6 h-6 border-4 border-white shadow"></div>
+                        <div class="text-sm text-green-500 font-bold tracking-wider uppercase mb-1">Months 22-24</div>
+                        <h3 class="text-2xl font-bold text-slate-800 mb-3">Phase 8: The Portfolio & Job Hunt</h3>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-green-500">
+                            <ul class="space-y-3 text-slate-600">
+                                <li class="flex items-start"><i class="fa-solid fa-trophy text-green-500 mt-1 mr-3 w-5"></i> <span><strong>Capstone Project:</strong> A massive end-to-end automated infrastructure deployed via IaC, monitored, and secured.</span></li>
+                                <li class="flex items-start"><i class="fa-brands fa-linkedin text-green-500 mt-1 mr-3 w-5"></i> <span><strong>Personal Branding:</strong> Optimize LinkedIn, polish GitHub READMEs, architecture diagrams.</span></li>
+                                <li class="flex items-start"><i class="fa-solid fa-globe text-green-500 mt-1 mr-3 w-5"></i> <span><strong>Global Outreach:</strong> Target remote-friendly companies in EU/US via Wellfound, WeWorkRemotely, and LinkedIn.</span></li>
+                                <li class="flex items-start"><i class="fa-solid fa-comments text-green-500 mt-1 mr-3 w-5"></i> <span><strong>Interview Prep:</strong> System design, technical Q&A, and mock interviews.</span></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -171,22 +361,49 @@
         let selectedDate = new Date(); // Represents the day clicked for tasks
         const actualToday = new Date(); // The real world "today"
         
+        // Timer State
+        let timerInterval;
+        let timeLeft = 25 * 60;
+        let isTimerRunning = false;
+        
         // Task Storage (Format: { "YYYY-MM-DD": [ {id, text, completed} ] })
-        let tasks = JSON.parse(localStorage.getItem('plannerTasksV2'));
+        let tasks = JSON.parse(localStorage.getItem('plannerTasksV3'));
 
         if (!tasks || Object.keys(tasks).length === 0) {
             tasks = {};
             const roadmapDays = [
-                ["Install Linux (WSL or VM) & Learn basic CLI (ls, cd, mkdir)", "Set up GitHub account & Git basics", "Read: OSI Model & TCP/IP Basics"],
-                ["Learn Linux permissions (chmod, chown)", "Write first Bash script (Automate backups)", "Practice Git commit, push, pull"],
-                ["Learn Bash variables, loops, and conditionals", "Understand DNS resolution and HTTP/HTTPS", "Write a Python script to read/write files"],
-                ["Set up SSH keys & connect to a remote server", "Learn Cronjobs for scheduling scripts", "Python: APIs and JSON parsing"],
-                ["Create AWS Free Tier account", "Launch an EC2 instance manually", "Understand VPCs, Subnets, and Security Groups"],
-                ["Install Docker locally", "Write a Dockerfile for a simple web app", "Run and manage Docker containers"],
-                ["Learn Docker Compose for multi-container apps", "Push Docker image to Docker Hub", "AWS: Set up IAM users and roles"],
-                ["Introduction to Terraform (IaC)", "Deploy an EC2 instance using Terraform", "Understand Terraform state"],
-                ["Set up a CI/CD pipeline with GitHub Actions", "Automate Docker image build in CI/CD", "Deploy app to EC2 via GitHub Actions"],
-                ["Read about OWASP Top 10", "Implement basic security scanning in CI/CD", "Optimize resume for remote DevSecOps roles"]
+                // Week 1: Linux Basics
+                ["Install Linux (WSL/VM)", "Learn basic CLI navigation (ls, cd, pwd, mkdir)", "Understand file hierarchies"],
+                ["Learn file reading & editing (cat, nano, vim basics)", "Read: OSI Model & TCP/IP Basics", "Setup GitHub account"],
+                ["Master file permissions (chmod, chown)", "Practice User management (useradd, usermod)", "Git basics: init, add, commit"],
+                ["Learn Process Management (top, ps, kill)", "Networking: ping, curl, wget, netstat", "Git branching and merging"],
+                ["Package management (apt/yum)", "Learn Grep, Awk, and Sed basics", "Push first repo to GitHub"],
+                ["Write first Bash script (Hello World, variables)", "Learn SSH (Key generation, remote connection)", "Review Week 1 concepts"],
+                ["Rest & Review: Read an article on DevSecOps", "Plan Week 2", "Play with Linux CLI freely"],
+                // Week 2: Advanced Bash & Python Intro
+                ["Bash: Conditionals (if/else)", "Bash: Loops (for/while)", "Write a system info bash script"],
+                ["Learn Cronjobs for scheduling scripts", "Automate a basic log backup using Bash & Cron", "Git: Resolving merge conflicts"],
+                ["Install Python & Setup environment", "Python: Variables, Strings, Integers", "Python: Lists and Dictionaries"],
+                ["Python: Functions and Logic", "Python: File I/O (reading logs)", "Translate the Bash backup script to Python"],
+                ["Python: Error handling (try/except)", "Python: Virtual environments (pip, venv)", "Create a simple Python script repository"],
+                ["Python: Using the 'os' and 'sys' modules", "Understand JSON data format", "Combine week concepts into one script"],
+                ["Rest & Review: Read about Cloud Computing", "Update GitHub Profile", "Plan Week 3"],
+                // Week 3: Networking & Cloud Intro
+                ["Understand DNS resolution and HTTP/HTTPS", "Learn about Ports, Firewalls, and Subnets", "Python: 'requests' library to fetch API data"],
+                ["Create AWS Free Tier account", "Understand AWS IAM (Users, Groups, Policies)", "Secure root AWS account (MFA)"],
+                ["AWS: Intro to VPCs (Virtual Private Cloud)", "Create a public and private subnet", "Understand Internet Gateways"],
+                ["Launch an EC2 instance manually", "Connect to EC2 via SSH using keys", "Install a web server (Nginx/Apache) on EC2"],
+                ["AWS: Security Groups & Network ACLs", "Configure firewall to only allow HTTP/SSH", "Python: Boto3 basics (AWS SDK)"],
+                ["Write a Python script to list EC2 instances", "Understand Load Balancing concepts", "Review AWS Networking basics"],
+                ["Rest & Review", "Document learnings in a blog or repo", "Plan Week 4"],
+                // Week 4: Docker & Containers
+                ["What are containers vs VMs?", "Install Docker locally", "Run 'hello-world' container"],
+                ["Learn Docker architecture (Images, Containers, Engine)", "Basic Docker commands (run, ps, stop, rm)", "Pull images from Docker Hub"],
+                ["Write first Dockerfile", "Containerize a simple static website", "Expose ports and test locally"],
+                ["Understand Docker Volumes (data persistence)", "Docker Networking basics", "Run a database container (PostgreSQL/MySQL)"],
+                ["Connect a web app container to a db container", "Introduction to Docker Compose", "Write a docker-compose.yml for a 2-tier app"],
+                ["Push your custom Docker image to Docker Hub", "Deploy Docker container on an EC2 instance", "Review Month 1 achievements!"],
+                ["Celebrate Month 1 completion", "Review the full Roadmap for Phase 2", "Take a well-deserved break"]
             ];
 
             let startDate = new Date(actualToday);
@@ -203,7 +420,7 @@
                     completed: false
                 }));
             });
-            localStorage.setItem('plannerTasksV2', JSON.stringify(tasks));
+            localStorage.setItem('plannerTasksV3', JSON.stringify(tasks));
         }
 
         // DOM Elements
@@ -216,6 +433,11 @@
         const taskInput = document.getElementById('task-input');
         const emptyState = document.getElementById('empty-state');
         
+        const tabCalendar = document.getElementById('tab-calendar');
+        const tabRoadmap = document.getElementById('tab-roadmap');
+        const calendarView = document.getElementById('calendar-view');
+        const roadmapView = document.getElementById('roadmap-view');
+
         // Constants
         const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -229,8 +451,8 @@
         function init() {
             todayDateDisplay.innerText = `Today is ${dayNames[actualToday.getDay()]}, ${monthNames[actualToday.getMonth()]} ${actualToday.getDate()}`;
             renderCalendar();
-            updateDaysLeft();
             selectDate(actualToday);
+            updateTimerDisplay();
         }
 
         // Calendar Logic
@@ -326,13 +548,71 @@
             renderTasks();
         }
 
-        // Calculate Days Left
-        function updateDaysLeft() {
-            // Career Goal Countdown (2 Years / 730 days from start)
-            const goalDate = new Date(actualToday.getFullYear() + 2, actualToday.getMonth(), actualToday.getDate());
-            const diffTime = Math.abs(goalDate - actualToday);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-            document.getElementById('days-left-year').innerText = diffDays;
+        // Pomodoro Timer & Reset Logic
+        function updateTimerDisplay() {
+            const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+            const s = (timeLeft % 60).toString().padStart(2, '0');
+            document.getElementById('timer-display').innerText = `${m}:${s}`;
+        }
+
+        function toggleTimer() {
+            const toggleBtn = document.getElementById('timer-toggle');
+            if (isTimerRunning) {
+                clearInterval(timerInterval);
+                toggleBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+                toggleBtn.classList.replace('text-white', 'text-slate-400');
+            } else {
+                timerInterval = setInterval(() => {
+                    if (timeLeft > 0) {
+                        timeLeft--;
+                        updateTimerDisplay();
+                    } else {
+                        clearInterval(timerInterval);
+                        isTimerRunning = false;
+                        toggleBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+                        toggleBtn.classList.replace('text-white', 'text-slate-400');
+                        // Trigger Timer Confetti
+                        if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
+                        timeLeft = 25 * 60;
+                        updateTimerDisplay();
+                    }
+                }, 1000);
+                toggleBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                toggleBtn.classList.replace('text-slate-400', 'text-white');
+            }
+            isTimerRunning = !isTimerRunning;
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            timeLeft = 25 * 60;
+            updateTimerDisplay();
+            const toggleBtn = document.getElementById('timer-toggle');
+            toggleBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+            toggleBtn.classList.replace('text-white', 'text-slate-400');
+        }
+
+        let resetClickCount = 0;
+        function factoryReset() {
+            const btn = document.getElementById('reset-btn');
+            if (resetClickCount === 0) {
+                btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> <span>Confirm</span>';
+                btn.classList.replace('bg-slate-100', 'bg-red-100');
+                btn.classList.replace('text-slate-400', 'text-red-600');
+                resetClickCount++;
+                
+                // Soft reset timeout
+                setTimeout(() => {
+                    resetClickCount = 0;
+                    btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> <span>Reset Plan</span>';
+                    btn.classList.replace('bg-red-100', 'bg-slate-100');
+                    btn.classList.replace('text-red-600', 'text-slate-400');
+                }, 3000);
+            } else {
+                localStorage.removeItem('plannerTasksV3'); // Wipe local storage
+                location.reload(); // Reload to regenerate fresh tasks
+            }
         }
 
         // Task Management
@@ -369,6 +649,7 @@
             const task = tasks[dateKey].find(t => t.id === id);
             if (task) {
                 task.completed = !task.completed;
+                if (task.completed) task.justCompleted = true; // Flag to trigger visual reward
                 saveTasks();
                 renderTasks();
             }
@@ -390,6 +671,34 @@
             const dateKey = formatDateKey(selectedDate);
             const currentTasks = tasks[dateKey] || [];
             
+            // Render Progress Bar
+            let completedCount = 0;
+            const progressFill = document.getElementById('daily-progress');
+            const progressText = document.getElementById('progress-text');
+            
+            if (currentTasks.length > 0) {
+                completedCount = currentTasks.filter(t => t.completed).length;
+                const percent = Math.round((completedCount / currentTasks.length) * 100);
+                progressFill.style.width = `${percent}%`;
+                progressText.innerText = `${percent}%`;
+                
+                // Trigger confetti if 100% is newly reached
+                if (percent === 100 && currentTasks.some(t => t.justCompleted) && typeof confetti === 'function') {
+                    confetti({
+                        particleCount: 150,
+                        spread: 80,
+                        origin: { y: 0.6 },
+                        colors: ['#4f46e5', '#10b981', '#3b82f6', '#f59e0b'],
+                        zIndex: 9999
+                    });
+                    currentTasks.forEach(t => t.justCompleted = false); // Consume the flag
+                    saveTasks(); // Save state so it doesn't fire again on reload
+                }
+            } else {
+                progressFill.style.width = '0%';
+                progressText.innerText = '0%';
+            }
+
             // Clear current list except empty state
             Array.from(taskListEl.children).forEach(child => {
                 if (child.id !== 'empty-state') {
@@ -430,6 +739,28 @@
                  .replace(/>/g, "&gt;")
                  .replace(/"/g, "&quot;")
                  .replace(/'/g, "&#039;");
+        }
+
+        function switchView(viewName) {
+            if (viewName === 'calendar') {
+                calendarView.classList.remove('hidden');
+                roadmapView.classList.add('hidden');
+                
+                tabCalendar.classList.add('text-primary', 'border-primary', 'font-semibold');
+                tabCalendar.classList.remove('text-slate-500', 'hover:text-slate-700', 'border-transparent', 'font-medium');
+                
+                tabRoadmap.classList.remove('text-primary', 'border-primary', 'font-semibold');
+                tabRoadmap.classList.add('text-slate-500', 'hover:text-slate-700', 'border-transparent', 'font-medium');
+            } else {
+                calendarView.classList.add('hidden');
+                roadmapView.classList.remove('hidden');
+                
+                tabRoadmap.classList.add('text-primary', 'border-primary', 'font-semibold');
+                tabRoadmap.classList.remove('text-slate-500', 'hover:text-slate-700', 'border-transparent', 'font-medium');
+                
+                tabCalendar.classList.remove('text-primary', 'border-primary', 'font-semibold');
+                tabCalendar.classList.add('text-slate-500', 'hover:text-slate-700', 'border-transparent', 'font-medium');
+            }
         }
 
         // Run on load
